@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -7,19 +7,13 @@ import numpy_financial as npf
 import pandas as pd
 
 app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 @app.get("/")
-def serve_index():
+def get_index():
     return FileResponse("index.html")
 
-class CBAInput(BaseModel):
+class InputData(BaseModel):
     name: str
     capex: float
     opex: float
@@ -28,26 +22,27 @@ class CBAInput(BaseModel):
     rate: float
 
 @app.post("/calculate")
-def calculate(inputs: list[CBAInput]):
+def calculate(inputs: list[InputData]):
     results = []
     for item in inputs:
         try:
-            rate_decimal = item.rate / 100.0
+            r = item.rate / 100.0
+            cashflows = [-item.capex] + [item.benefits - item.opex] * item.years
+            irr = round(npf.irr(cashflows), 4)
             df = pd.DataFrame({
-                'Year': list(range(0, item.years + 1)),
-                'CAPEX': [item.capex] + [0] * item.years,
-                'OPEX': [0] + [item.opex] * item.years,
-                'BENEFITS': [0] + [item.benefits] * item.years
+                "Year": list(range(item.years + 1)),
+                "CAPEX": [item.capex] + [0] * item.years,
+                "OPEX": [0] + [item.opex] * item.years,
+                "BENEFITS": [0] + [item.benefits] * item.years
             })
-            df['discount_factor'] = 1 / (1 + rate_decimal) ** df['Year']
-            df['discounted_capex'] = df['CAPEX'] * df['discount_factor']
-            df['discounted_opex'] = df['OPEX'] * df['discount_factor']
-            df['discounted_benefits'] = df['BENEFITS'] * df['discount_factor']
-            df['NPV_year'] = df['discounted_benefits'] - (df['discounted_capex'] + df['discounted_opex'])
-            df['NPV_cumulative'] = df['NPV_year'].cumsum()
-            npv_cum = round(df['NPV_cumulative'].iloc[-1], 2)
-            irr = round(npf.irr([-item.capex] + [item.benefits - item.opex] * item.years), 4)
-            cbr = round(df['discounted_benefits'].sum() / (df['discounted_capex'].sum() + df['discounted_opex'].sum()), 4)
+            df["DF"] = 1 / (1 + r) ** df["Year"]
+            df["Discounted_CAPEX"] = df["CAPEX"] * df["DF"]
+            df["Discounted_OPEX"] = df["OPEX"] * df["DF"]
+            df["Discounted_BENEFITS"] = df["BENEFITS"] * df["DF"]
+            total_costs = df["Discounted_CAPEX"].sum() + df["Discounted_OPEX"].sum()
+            total_benefits = df["Discounted_BENEFITS"].sum()
+            npv = round(total_benefits - total_costs, 2)
+            cbr = round(total_benefits / total_costs, 4)
             results.append({
                 "name": item.name,
                 "capex": item.capex,
@@ -55,10 +50,10 @@ def calculate(inputs: list[CBAInput]):
                 "benefits": item.benefits,
                 "years": item.years,
                 "rate": item.rate,
-                "npv": npv_cum,
+                "npv": npv,
                 "irr": irr,
                 "cbr": cbr
             })
         except Exception as e:
-            results.append({"name": item.name, "error": str(e)})
+            results.append({ "name": item.name, "error": str(e) })
     return results

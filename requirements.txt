@@ -1,7 +1,6 @@
 fastapi
 uvicorn
 pandas
-matplotlib
 numpy
 numpy-financial
 python-multipart

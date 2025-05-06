@@ -1,1 +1,1 @@
-Final deployment with named alternatives and full input-output export to Excel.
+Final version of the CBA tool with input + output Excel export, and embedded ISGAN logo.
