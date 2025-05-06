@@ -1,1 +1,172 @@
-<html><body><p>Placeholder</p></body></html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CBA Comparison Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 2rem; }
+        .alt-card { border: 1px solid #ccc; border-radius: 5px; padding: 1rem; margin-bottom: 1rem; }
+        .highlight { background-color: #d4edda; font-weight: bold; }
+        .results-table th, .results-table td { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1 class="mb-4">Compare up to 6 Alternatives</h1>
+    <form id="calcForm">
+        <div class="row">
+            
+    <div class="col-md-4">
+        <div class="alt-card">
+            <h5>Alternative 1</h5>
+            <label>CAPEX (€): <input type="number" id="capex1" class="form-control" step="any"></label>
+            <label>Annual OPEX (€): <input type="number" id="opex1" class="form-control" step="any"></label>
+            <label>Annual Benefits (€): <input type="number" id="benefits1" class="form-control" step="any"></label>
+            <label>Investment Duration (Years): <input type="number" id="years1" class="form-control"></label>
+            <label>Discount Rate (%): <input type="number" id="rate1" class="form-control" step="any"></label>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="alt-card">
+            <h5>Alternative 2</h5>
+            <label>CAPEX (€): <input type="number" id="capex2" class="form-control" step="any"></label>
+            <label>Annual OPEX (€): <input type="number" id="opex2" class="form-control" step="any"></label>
+            <label>Annual Benefits (€): <input type="number" id="benefits2" class="form-control" step="any"></label>
+            <label>Investment Duration (Years): <input type="number" id="years2" class="form-control"></label>
+            <label>Discount Rate (%): <input type="number" id="rate2" class="form-control" step="any"></label>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="alt-card">
+            <h5>Alternative 3</h5>
+            <label>CAPEX (€): <input type="number" id="capex3" class="form-control" step="any"></label>
+            <label>Annual OPEX (€): <input type="number" id="opex3" class="form-control" step="any"></label>
+            <label>Annual Benefits (€): <input type="number" id="benefits3" class="form-control" step="any"></label>
+            <label>Investment Duration (Years): <input type="number" id="years3" class="form-control"></label>
+            <label>Discount Rate (%): <input type="number" id="rate3" class="form-control" step="any"></label>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="alt-card">
+            <h5>Alternative 4</h5>
+            <label>CAPEX (€): <input type="number" id="capex4" class="form-control" step="any"></label>
+            <label>Annual OPEX (€): <input type="number" id="opex4" class="form-control" step="any"></label>
+            <label>Annual Benefits (€): <input type="number" id="benefits4" class="form-control" step="any"></label>
+            <label>Investment Duration (Years): <input type="number" id="years4" class="form-control"></label>
+            <label>Discount Rate (%): <input type="number" id="rate4" class="form-control" step="any"></label>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="alt-card">
+            <h5>Alternative 5</h5>
+            <label>CAPEX (€): <input type="number" id="capex5" class="form-control" step="any"></label>
+            <label>Annual OPEX (€): <input type="number" id="opex5" class="form-control" step="any"></label>
+            <label>Annual Benefits (€): <input type="number" id="benefits5" class="form-control" step="any"></label>
+            <label>Investment Duration (Years): <input type="number" id="years5" class="form-control"></label>
+            <label>Discount Rate (%): <input type="number" id="rate5" class="form-control" step="any"></label>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="alt-card">
+            <h5>Alternative 6</h5>
+            <label>CAPEX (€): <input type="number" id="capex6" class="form-control" step="any"></label>
+            <label>Annual OPEX (€): <input type="number" id="opex6" class="form-control" step="any"></label>
+            <label>Annual Benefits (€): <input type="number" id="benefits6" class="form-control" step="any"></label>
+            <label>Investment Duration (Years): <input type="number" id="years6" class="form-control"></label>
+            <label>Discount Rate (%): <input type="number" id="rate6" class="form-control" step="any"></label>
+        </div>
+    </div>
+    
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Calculate CBA</button>
+    </form>
+
+    <div id="results" class="mt-5"></div>
+    <div class="mt-3">
+        <button class="btn btn-success" onclick="downloadExcel()">Download Excel</button>
+    </div>
+    <div class="mt-4">
+        <button class="btn btn-secondary me-2" onclick="location.reload()">Back to CBA</button>
+        <a href="https://smartgrideval.unica.it/main_user/" class="btn btn-outline-dark">Back to Smartgrideval</a>
+    </div>
+
+<script>
+    document.getElementById("calcForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "<p>Loading...</p>";
+
+        const entries = [];
+        for (let i = 1; i <= 6; i++) {
+            const capex = parseFloat(document.querySelector(`#capex${i}`).value);
+            const opex = parseFloat(document.querySelector(`#opex${i}`).value);
+            const benefits = parseFloat(document.querySelector(`#benefits${i}`).value);
+            const years = parseInt(document.querySelector(`#years${i}`).value);
+            const rate = parseFloat(document.querySelector(`#rate${i}`).value);
+
+            if (!isNaN(capex) && !isNaN(opex) && !isNaN(benefits) && !isNaN(years) && !isNaN(rate)) {
+                entries.push({ index: i, capex, opex, benefits, years, rate });
+            }
+        }
+
+        const results = [];
+        for (const entry of entries) {
+            try {
+                const res = await fetch("/calculate", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(entry)
+                });
+                const data = await res.json();
+                results.push({ ...data, index: entry.index });
+            } catch (err) {
+                results.push({ index: entry.index, error: true });
+            }
+        }
+
+        if (results.length === 0) {
+            resultsDiv.innerHTML = "<p class='text-danger'>No valid alternatives provided.</p>";
+            return;
+        }
+
+        const maxNPV = Math.max(...results.map(r => r.npv_cumulative || -Infinity));
+        let html = `
+            <h3>Comparison Results</h3>
+            <table class="table table-bordered results-table mt-3">
+                <thead class="table-light">
+                    <tr>
+                        <th>Alternative</th>
+                        <th>NPV (€)</th>
+                        <th>IRR</th>
+                        <th>CB Ratio</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        results.forEach(r => {
+            const highlight = r.npv_cumulative === maxNPV ? "highlight" : "";
+            if (r.error) {
+                html += `<tr class="table-danger"><td>Alt ${r.index}</td><td colspan="3">Error</td></tr>`;
+            } else {
+                html += `
+                    <tr class="${highlight}">
+                        <td>Alt ${r.index}</td>
+                        <td>€${r.npv_cumulative}</td>
+                        <td>${r.irr}</td>
+                        <td>${r.cb_ratio}</td>
+                    </tr>
+                `;
+            }
+        });
+        html += "</tbody></table>";
+        resultsDiv.innerHTML = html;
+    });
+</script>
+</body>
+</html>
