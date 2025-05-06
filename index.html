@@ -11,6 +11,42 @@
         .highlight { background-color: #d4edda; font-weight: bold; }
         .results-table th, .results-table td { text-align: center; }
     </style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
+function renderCharts(results) {
+    const labels = results.map(r => "A." + r.index);
+    const npvs = results.map(r => r.npv_cumulative);
+    const irrs = results.map(r => r.irr);
+    const cbrs = results.map(r => r.cb_ratio);
+
+    const createChart = (ctxId, data, label) => {
+        const ctx = document.getElementById(ctxId).getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    backgroundColor: data.map(v => v === Math.max(...data) ? '#4e73df' : '#d1d3e2')
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    };
+
+    createChart("npvChart", npvs, "NPV");
+    createChart("irrChart", irrs, "IRR");
+    createChart("cbrChart", cbrs, "CBR");
+}
+
+</script>
+
 </head>
 <body>
     <h1 class="mb-4">Compare up to 6 Alternatives</h1>
@@ -93,7 +129,7 @@
     </div>
     <div class="mt-4">
         <button class="btn btn-secondary me-2" onclick="location.reload()">Back to CBA</button>
-        <a href="https://smartgrideval.unica.it/main_user/" class="btn btn-outline-dark">Back to Smartgrideval</a>
+        <a href="https://smartgrideval.unica.it/main_cba/" class="btn btn-outline-dark">Back to Smartgrideval</a>
     </div>
 
 <script>
@@ -165,8 +201,56 @@
             }
         });
         html += "</tbody></table>";
-        resultsDiv.innerHTML = html;
+        
+        if (results.some(r => r.error)) {
+            html += "<p class='text-danger mt-3'>Some alternatives could not be processed correctly.</p>";
+        }
+
+        resultsDiv.innerHTML = html + `
+<div class="mt-5">
+    <h4>NPV bar chart</h4>
+    <canvas id="npvChart" height="100"></canvas>
+    <h4 class="mt-4">IRR bar chart</h4>
+    <canvas id="irrChart" height="100"></canvas>
+    <h4 class="mt-4">CBR bar chart</h4>
+    <canvas id="cbrChart" height="100"></canvas>
+</div>
+`;
+        renderCharts(results.filter(r => !r.error));
     });
+
+function renderCharts(results) {
+    const labels = results.map(r => "A." + r.index);
+    const npvs = results.map(r => r.npv_cumulative);
+    const irrs = results.map(r => r.irr);
+    const cbrs = results.map(r => r.cb_ratio);
+
+    const createChart = (ctxId, data, label) => {
+        const ctx = document.getElementById(ctxId).getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    backgroundColor: data.map(v => v === Math.max(...data) ? '#4e73df' : '#d1d3e2')
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    };
+
+    createChart("npvChart", npvs, "NPV");
+    createChart("irrChart", irrs, "IRR");
+    createChart("cbrChart", cbrs, "CBR");
+}
+
 </script>
 </body>
 </html>
